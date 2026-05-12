@@ -1,0 +1,28 @@
+{
+  "entities": {
+    "OddsEntry": {
+      "title": "Odds Entry",
+      "description": "A single point-in-time snapshot of racing odds parsed from an image.",
+      "type": "object",
+      "properties": {
+        "raceId": { "type": "string", "description": "Unique identifier for the race (e.g., Track-RaceNumber-Date)" },
+        "timestamp": { "type": "string", "format": "date-time", "description": "When the data was processed" },
+        "screenType": { "type": "string", "enum": ["ExactaMatrix", "WPSPools"], "description": "Type of screen parsed" },
+        "rawData": { "type": "object", "description": "The raw JSON/Matrix parsed from the image" },
+        "shiftScore": { "type": "object", "description": "The difference between this entry and the previous one" },
+        "userId": { "type": "string", "description": "The user who uploaded the data" }
+      },
+      "required": ["raceId", "timestamp", "screenType", "rawData"]
+    }
+  },
+  "firestore": {
+    "/races/{raceId}/entries/{entryId}": {
+      "schema": "OddsEntry",
+      "description": "History of odds entries for a specific race"
+    },
+    "/users/{userId}/recentRaces": {
+      "schema": "object",
+      "description": "User specific metadata for quick access"
+    }
+  }
+}

@@ -1,0 +1,6 @@
+{
+  "name": "Horse Race Odds Tracker",
+  "description": "AI-powered horse racing odds tracking with real-time shift analysis and storage.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}

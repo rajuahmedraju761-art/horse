@@ -1,0 +1,44 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // Odds Entry validation
+    function isValidOddsEntry(data) {
+      return data.keys().hasAll(['raceId', 'timestamp', 'screenType', 'rawData']) &&
+             data.raceId is string &&
+             data.screenType in ['ExactaMatrix', 'WPSPools'] &&
+             data.rawData is map;
+    }
+
+    // Since we are using the client SDK in a server-side context without request.auth context,
+    // we need a way to allow' the server to write. 
+    // In a real app, we'd use Admin SDK. In this AI Studio context, we can allow writes
+    // if they match our expected schema, or if they are from a specific known service account (not easily available).
+    // For now, I will allow writes to odds_history if they are valid schema.
+    // WARNING: This is insecure for real-world production but necessary for this demo setup.
+    match /odds_history/{entryId} {
+      allow create: if isValidOddsEntry(request.resource.data);
+      allow read: if true; // Allow anyone to see the odds for now
+    }
+    
+    // For specific race tracks
+    match /races/{raceId}/entries/{entryId} {
+      allow create: if isValidOddsEntry(request.resource.data);
+      allow read: if true;
+    }
+  }
+}

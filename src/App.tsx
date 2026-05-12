@@ -4,11 +4,11 @@
  */
 
 import { useState, useEffect, useRef, useMemo } from "react";
-import { 
-  History, 
-  ChevronRight, 
-  TrendingUp, 
-  BarChart3, 
+import {
+  History,
+  ChevronRight,
+  TrendingUp,
+  BarChart3,
   AlertCircle,
   RefreshCw,
   Clock,
@@ -20,12 +20,12 @@ import {
 } from "lucide-react";
 import { motion } from "motion/react";
 import { LineChart, Line, ResponsiveContainer, YAxis } from "recharts";
-import { 
-  collection, 
-  query, 
-  where, 
-  orderBy, 
-  limit, 
+import {
+  collection,
+  query,
+  where,
+  orderBy,
+  limit,
   onSnapshot,
   getDocFromServer,
   doc,
@@ -48,17 +48,17 @@ interface OddsEntry {
 // Sparkline component for the grid cells
 const Sparkline = ({ data, color }: { data: number[], color: string }) => {
   const chartData = useMemo(() => data.map((val, i) => ({ value: val, index: i })), [data]);
-  
+
   return (
     <div className="h-6 w-full opacity-60">
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={chartData}>
-          <Line 
-            type="monotone" 
-            dataKey="value" 
-            stroke={color} 
-            strokeWidth={2} 
-            dot={false} 
+          <Line
+            type="monotone"
+            dataKey="value"
+            stroke={color}
+            strokeWidth={2}
+            dot={false}
             isAnimationActive={false}
           />
           <YAxis hide domain={['auto', 'auto']} />
@@ -73,8 +73,9 @@ export default function App() {
   const [raceId, setRaceId] = useState("");
   const [uploadResult, setUploadResult] = useState<any>(null);
   const [history, setHistory] = useState<OddsEntry[]>([]);
+
   const [error, setError] = useState<string | null>(null);
-  
+
   const lastProcessedId = useRef<string | null>(null);
 
   // Connection Test
@@ -96,7 +97,7 @@ export default function App() {
   // Real-time Firestore listener (Filtered)
   useEffect(() => {
     if (!raceId) return;
-    
+
     // Normalized query
     const tidiedRaceId = raceId.trim().toUpperCase();
     console.log(`Setting up filtered listener for: [${tidiedRaceId}] - [${screenType}]`);
@@ -192,7 +193,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-slate-900 font-sans">
       <Toaster position="top-center" richColors />
-      
+
       {/* Top Navigation / Header */}
       <header className="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -205,7 +206,7 @@ export default function App() {
                 </div>
                 <span className="font-black tracking-tight text-xl text-slate-900">PROTrack</span>
               </div>
-              
+
               {/* Mobile Live Indicator */}
               <div className="sm:hidden flex items-center gap-2 px-2.5 py-1 bg-emerald-50 border border-emerald-200 rounded-full">
                 <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)] animate-pulse" />
@@ -216,20 +217,20 @@ export default function App() {
             {/* Controls */}
             <div className="flex items-center gap-3 w-full sm:w-auto">
               <div className="flex-1 sm:flex-none relative">
-                <input 
+                <input
                   value={raceId}
                   onChange={(e) => setRaceId(e.target.value)}
                   className="w-full sm:w-48 bg-slate-50 border border-slate-200 rounded-xl px-4 py-2 text-sm font-bold text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 shadow-inner transition-all"
                   placeholder="Enter RACE-ID..."
                 />
               </div>
-              
+
               <div className="hidden sm:flex items-center gap-2 px-3 py-2 bg-emerald-50 border border-emerald-200 rounded-xl">
                 <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.4)] animate-pulse" />
                 <span className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider">Live</span>
               </div>
 
-              <button 
+              <button
                 onClick={handleHardRefresh}
                 className="p-2 hover:bg-slate-50 rounded-xl text-slate-600 transition-colors border border-slate-200 bg-white shadow-sm flex-shrink-0"
                 title="Force Server Refresh"
@@ -260,24 +261,23 @@ export default function App() {
                 {raceId || "NO RACE"} <span className="text-slate-400 ml-1 sm:ml-2 font-medium">/ Analysis</span>
               </h1>
             </div>
-            
+
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between lg:justify-end w-full lg:w-auto gap-4 sm:gap-6">
               <div className="flex bg-slate-200/50 p-1 rounded-xl shadow-inner border border-slate-200 w-full sm:w-auto">
                 {(["ExactaMatrix", "WPSPools"] as const).map((type) => (
                   <button
                     key={type}
                     onClick={() => setScreenType(type)}
-                    className={`flex-1 sm:flex-none px-4 py-2 sm:py-1.5 rounded-lg text-xs font-bold transition-all ${
-                      screenType === type 
-                        ? "bg-white text-indigo-700 shadow-sm border border-slate-200/50" 
+                    className={`flex-1 sm:flex-none px-4 py-2 sm:py-1.5 rounded-lg text-xs font-bold transition-all ${screenType === type
+                        ? "bg-white text-indigo-700 shadow-sm border border-slate-200/50"
                         : "text-slate-500 hover:text-slate-700 hover:bg-slate-100/50"
-                    }`}
+                      }`}
                   >
                     {type === "ExactaMatrix" ? "EXACTA" : "WPS POOLS"}
                   </button>
                 ))}
               </div>
-              
+
               <div className="flex items-center gap-4 sm:text-right">
                 <div>
                   <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-0.5">Samples Processed</p>
@@ -293,7 +293,7 @@ export default function App() {
               <div className="absolute top-0 right-0 p-8 opacity-[0.02] pointer-events-none hidden sm:block">
                 <BarChart3 className="w-64 h-64 rotate-12 text-slate-900" />
               </div>
-              
+
               <div className="relative z-10">
                 <div className="flex flex-wrap items-center justify-between gap-4 mb-6 sm:mb-8">
                   <div className="flex flex-wrap gap-4 sm:gap-6">
@@ -312,12 +312,12 @@ export default function App() {
                       {/* Y-Axis Label */}
                       <div className="col-span-1"></div>
                       {[...Array(10)].map((_, i) => (
-                        <div key={i} className="text-center text-[9px] sm:text-[10px] font-black text-slate-500 uppercase">#{i+1}</div>
+                        <div key={i} className="text-center text-[9px] sm:text-[10px] font-black text-slate-500 uppercase">#{i + 1}</div>
                       ))}
 
                       {uploadResult.rawData.matrix.map((row: any, i: number) => (
                         <div key={i} className="contents">
-                          <div className="flex items-center justify-end pr-2 sm:pr-4 text-[9px] sm:text-[10px] font-black text-slate-500 uppercase">#{i+1}</div>
+                          <div className="flex items-center justify-end pr-2 sm:pr-4 text-[9px] sm:text-[10px] font-black text-slate-500 uppercase">#{i + 1}</div>
                           {[...Array(10)].map((_, j) => {
                             const colKey = (j + 1).toString();
                             const val = row[colKey] ?? null;
@@ -328,15 +328,15 @@ export default function App() {
                                 key={j}
                                 whileHover={{ scale: 1.05, zIndex: 30 }}
                                 className={`relative group h-16 sm:h-20 rounded-xl sm:rounded-2xl border transition-all duration-300 flex flex-col items-center justify-center overflow-hidden shadow-sm
-                                  ${shift < 0 ? "bg-emerald-50 border-emerald-200" : 
-                                    shift > 0 ? "bg-rose-50 border-rose-200" : 
-                                    "bg-slate-50 border-slate-200 hover:bg-slate-100"}
+                                  ${shift < 0 ? "bg-emerald-50 border-emerald-200" :
+                                    shift > 0 ? "bg-rose-50 border-rose-200" :
+                                      "bg-slate-50 border-slate-200 hover:bg-slate-100"}
                                 `}
                               >
                                 <span className={`text-sm sm:text-base font-black tracking-tighter ${shift < 0 ? "text-emerald-700" : shift > 0 ? "text-rose-700" : "text-slate-900"}`}>
                                   {val !== null ? val : "—"}
                                 </span>
-                                
+
                                 {shift !== 0 && (
                                   <span className={`text-[8px] sm:text-[9px] font-black mt-0.5 ${shift < 0 ? "text-emerald-600/80" : "text-rose-600/80"}`}>
                                     {shift < 0 ? shift.toFixed(1) : `+${shift.toFixed(1)}`}
@@ -345,9 +345,9 @@ export default function App() {
 
                                 {/* Sparkline in the background */}
                                 <div className="absolute inset-x-1 sm:inset-x-2 bottom-1 sm:bottom-2">
-                                  <Sparkline 
-                                    data={trend} 
-                                    color={shift < 0 ? "#10B981" : shift > 0 ? "#F43F5E" : "#94A3B8"} 
+                                  <Sparkline
+                                    data={trend}
+                                    color={shift < 0 ? "#10B981" : shift > 0 ? "#F43F5E" : "#94A3B8"}
                                   />
                                 </div>
                               </motion.div>
@@ -393,7 +393,7 @@ export default function App() {
                         const val = horse[cat] || 0;
                         const sVal = shift?.[cat] || 0;
                         const trend = getPoolTrend(horse.number, cat);
-                        
+
                         return (
                           <div key={cat} className="space-y-1.5 sm:space-y-2">
                             <div className="flex items-center justify-between px-1">
@@ -404,15 +404,15 @@ export default function App() {
                                 </span>
                                 {sVal !== 0 && (
                                   <span className={`text-[7px] sm:text-[8px] font-black px-1.5 py-0.5 rounded-full border ${sVal > 0 ? "bg-emerald-50 text-emerald-700 border-emerald-200" : "bg-rose-50 text-rose-700 border-rose-200"}`}>
-                                     {sVal > 0 ? `+${sVal}` : sVal}
+                                    {sVal > 0 ? `+${sVal}` : sVal}
                                   </span>
                                 )}
                               </div>
                             </div>
                             <div className="h-6 sm:h-8 w-full bg-slate-50 rounded-lg sm:rounded-xl overflow-hidden px-1 sm:px-2 pt-0.5 sm:pt-1 border border-slate-100">
-                              <Sparkline 
-                                data={trend} 
-                                color={sVal > 0 ? "#10B981" : sVal < 0 ? "#F43F5E" : "#6366F1"} 
+                              <Sparkline
+                                data={trend}
+                                color={sVal > 0 ? "#10B981" : sVal < 0 ? "#F43F5E" : "#6366F1"}
                               />
                             </div>
                           </div>

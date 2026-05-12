@@ -9,7 +9,9 @@ import {
   orderBy, 
   limit, 
   getDocs,
-  serverTimestamp
+  serverTimestamp,
+  doc,
+  setDoc
 } from "firebase/firestore";
 import firebaseConfig from "../firebase-applet-config.json";
 
@@ -53,21 +55,43 @@ export default async function handler(req: any, res: any) {
     const raceId = (rawRaceId || race_id || raceID || "UNKNOWN")?.trim().toUpperCase();
 
     console.log(`[API] Upload attempt. Race: ${raceId}, Type: ${screenType}`);
+    
+    // Helper to update status
+    const updateStatus = async (status: string, message: string) => {
+      if (raceId !== "UNKNOWN") {
+        try {
+          await setDoc(doc(db, "upload_status", `${raceId}_${screenType}`), {
+            status,
+            message,
+            timestamp: serverTimestamp()
+          });
+        } catch (e) {
+          console.error("Status update failed:", e);
+        }
+      }
+    };
 
     if (!image) {
+      await updateStatus("error", "Missing required field: 'image'.");
       return res.status(400).json({ error: "Missing required field: 'image'. Expected base64 string." });
     }
     if (!screenType || !["ExactaMatrix", "WPSPools"].includes(screenType)) {
-      return res.status(400).json({ error: "Invalid or missing 'screenType'. Must be 'ExactaMatrix' or 'WPSPools'." });
+      await updateStatus("error", "Invalid or missing 'screenType'.");
+      return res.status(400).json({ error: "Invalid or missing 'screenType'." });
     }
     if (!raceId) {
       return res.status(400).json({ error: "Missing required field: 'raceId'." });
     }
+    
+    await updateStatus("receiving", "Image received. Preparing AI prompt...");
     if (!process.env.OPENAI_API_KEY) {
       console.error("[API] OPENAI_API_KEY is missing!");
+      await updateStatus("error", "OPENAI_API_KEY is not configured.");
       return res.status(500).json({ error: "OPENAI_API_KEY is not configured on the server." });
     }
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+    await updateStatus("processing", "AI is analyzing the matrix...");
 
     const precisionPrompt = screenType === "ExactaMatrix" 
       ? `You are a high-precision optical character recognition expert specialized in reading financial and betting matrices. 
@@ -109,6 +133,7 @@ Rules:
       console.log(`[OpenAI] Analysis complete for ${raceId}`);
     } catch (openaiError: any) {
       console.error(`[OpenAI] Error: ${openaiError.message}`);
+      await updateStatus("error", `OpenAI processing failed: ${openaiError.message}`);
       return res.status(502).json({ error: `OpenAI processing failed: ${openaiError.message}` });
     }
 
@@ -117,11 +142,14 @@ Rules:
       parsedData = JSON.parse(responseText);
     } catch (parseError: any) {
       console.error(`[OpenAI] Invalid JSON returned`);
+      await updateStatus("error", "AI returned invalid JSON format");
       return res.status(502).json({ 
         error: "AI returned invalid JSON format", 
         rawResponse: responseText 
       });
     }
+
+    await updateStatus("processing", "Calculating shift score & saving...");
 
     let previousEntry = null;
     try {
@@ -155,6 +183,7 @@ Rules:
     try {
       const docRef = await addDoc(collection(db, "odds_history"), newEntry);
       console.log(`[Firestore] Entry saved: ${docRef.id} for Race: ${raceId}`);
+      await updateStatus("success", "Data processed and saved successfully!");
       res.status(200).json({
         success: true,
         id: docRef.id,
@@ -167,11 +196,13 @@ Rules:
       });
     } catch (firestoreWriteError: any) {
       console.error(`[Firestore] Write error: ${firestoreWriteError.message}`);
+      await updateStatus("error", "Failed to save data to database.");
       return res.status(500).json({ error: `Firestore write failed: ${firestoreWriteError.message}` });
     }
 
   } catch (error: any) {
     console.error("Critical error in /api/upload:", error);
+    // Use fallback for critical error if possible
     res.status(500).json({ error: `Internal server error: ${error.message}` });
   }
 }

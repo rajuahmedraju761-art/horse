@@ -147,6 +147,49 @@ export default function App() {
     return () => unsubscribe();
   }, [raceId, screenType]);
 
+  // Real-time Status Listener
+  useEffect(() => {
+    if (!raceId) return;
+    const tidiedRaceId = raceId.trim().toUpperCase();
+    let loadingToastId: string | number | null = null;
+
+    const unsubscribe = onSnapshot(doc(db, "upload_status", `${tidiedRaceId}_${screenType}`), (docSnap) => {
+      if (docSnap.exists()) {
+        const data = docSnap.data();
+        
+        // Prevent showing old statuses on initial load
+        const now = Date.now();
+        const statusAge = data.timestamp ? now - data.timestamp.toMillis() : 0;
+        if (statusAge > 10000 && data.status === "success") return; // Ignore old success statuses
+        
+        if (data.status === "receiving" || data.status === "processing") {
+          if (!loadingToastId) {
+            loadingToastId = toast.loading(data.message, { duration: 60000 }); // Keep alive during processing
+          } else {
+            toast.loading(data.message, { id: loadingToastId, duration: 60000 });
+          }
+        } else if (data.status === "success") {
+          if (loadingToastId) {
+            toast.success(data.message, { id: loadingToastId, duration: 3000 });
+            loadingToastId = null;
+          }
+        } else if (data.status === "error") {
+          if (loadingToastId) {
+            toast.error(data.message, { id: loadingToastId, duration: 5000 });
+            loadingToastId = null;
+          } else {
+            if (statusAge < 10000) toast.error(data.message, { duration: 5000 });
+          }
+        }
+      }
+    });
+
+    return () => {
+      unsubscribe();
+      if (loadingToastId) toast.dismiss(loadingToastId);
+    };
+  }, [raceId, screenType]);
+
   const handleHardRefresh = async () => {
     toast.promise(async () => {
       const tidiedRaceId = raceId.trim().toUpperCase();

@@ -17,11 +17,11 @@ import firebaseConfig from "../firebase-applet-config.json";
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 const db = getFirestore(app, (firebaseConfig as any).firestoreDatabaseId);
 
-// Initialize OpenAI
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+// OpenAI will be initialized inside the handler
 
 // Vercel Serverless Function Config
 export const config = {
+  maxDuration: 60,
   api: {
     bodyParser: {
       sizeLimit: '4.5mb',
@@ -67,6 +67,7 @@ export default async function handler(req: any, res: any) {
       console.error("[API] OPENAI_API_KEY is missing!");
       return res.status(500).json({ error: "OPENAI_API_KEY is not configured on the server." });
     }
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
     const precisionPrompt = screenType === "ExactaMatrix" 
       ? `You are a high-precision optical character recognition expert specialized in reading financial and betting matrices. 
